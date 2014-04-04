@@ -14,12 +14,15 @@ namespace Zenviro.Samurai
 
         protected override void OnStart(string[] args)
         {
-            Fleck.Instance.Init();
-            Task.Factory.StartNew(() => Fleck.Instance.Run());
-            //Task.Factory.StartNew(() => Dojo.Owin.Instance.Start());
-            Task.Factory.StartNew(AppConfig.InitDataDir);
-            Monitor.Instance.Init();
-            Task.Factory.StartNew(() => Monitor.Instance.Run());
+            Task.Factory.StartNew(() =>
+            {
+                Fleck.Instance.Init();
+                Fleck.Instance.Run();
+                //Dojo.Owin.Instance.Start();
+                AppConfig.InitDataDir();
+                Monitor.Instance.Init();
+                Monitor.Instance.Run();
+            });
         }
 
         protected override void OnStop()
