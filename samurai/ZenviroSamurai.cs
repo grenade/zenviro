@@ -1,4 +1,5 @@
 ﻿using System.ServiceProcess;
+using System.Threading.Tasks;
 using Zenviro.Bushido;
 using Zenviro.Ninja;
 
@@ -14,12 +15,11 @@ namespace Zenviro.Samurai
         protected override void OnStart(string[] args)
         {
             Fleck.Instance.Init();
-            Fleck.Instance.Run();
-            //Dojo.Owin.Instance.Start();
-            AppConfig.InitDataDir();
-
+            Task.Factory.StartNew(() => Fleck.Instance.Run());
+            //Task.Factory.StartNew(() => Dojo.Owin.Instance.Start());
+            Task.Factory.StartNew(AppConfig.InitDataDir);
             Monitor.Instance.Init();
-            Monitor.Instance.Run();
+            Task.Factory.StartNew(() => Monitor.Instance.Run());
         }
 
         protected override void OnStop()
