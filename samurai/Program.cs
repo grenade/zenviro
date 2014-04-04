@@ -1,9 +1,7 @@
 ﻿using System;
 using System.ServiceProcess;
 using log4net;
-using Microsoft.Owin.Hosting;
 using Zenviro.Bushido;
-using Zenviro.Dojo;
 using Zenviro.Ninja;
 
 namespace Zenviro.Samurai
@@ -23,18 +21,11 @@ namespace Zenviro.Samurai
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.WriteLine("press any key to stop.");
                 Console.ResetColor();
-
                 Fleck.Instance.Init();
                 Fleck.Instance.Run();
-                //Dojo.Owin.Instance.Start();
                 AppConfig.InitDataDir();
-
                 Monitor.Instance.Init();
                 Monitor.Instance.Run();
-
-                //Console.ReadKey();
-
-                //Dojo.Owin.Instance.Stop();
                 Monitor.Instance.Stop();
                 Fleck.Instance.Stop();
             }
