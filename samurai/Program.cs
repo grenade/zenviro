@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ServiceProcess;
 using log4net;
+using Microsoft.Owin.Hosting;
 using Zenviro.Bushido;
 using Zenviro.Dojo;
 using Zenviro.Ninja;
@@ -25,15 +26,15 @@ namespace Zenviro.Samurai
 
                 Fleck.Instance.Init();
                 Fleck.Instance.Run();
+                //Dojo.Owin.Instance.Start();
                 AppConfig.InitDataDir();
-                Nancy.Instance.Start();
 
                 Monitor.Instance.Init();
                 Monitor.Instance.Run();
 
                 //Console.ReadKey();
 
-                Nancy.Instance.Stop();
+                //Dojo.Owin.Instance.Stop();
                 Monitor.Instance.Stop();
                 Fleck.Instance.Stop();
             }

@@ -66,7 +66,9 @@ namespace Zenviro.Bushido
                 return Directory.GetFiles(folder, "*.dll", SearchOption.AllDirectories)
                     .Where(x => !x.Equals(assemblyPath, StringComparison.InvariantCultureIgnoreCase))
                     .Where(x => filePrefixes.Any(fp => Path.GetFileName(x).StartsWith(fp, StringComparison.InvariantCultureIgnoreCase)))
-                    .Select(AssemblyInformation.GetAssemblyModel);
+                    .Select(AssemblyInformation.GetAssemblyModel)
+                    .Where(x => x != null)
+                    .OrderBy(x => x.Name);
             return null;
         }
 
@@ -162,6 +164,7 @@ namespace Zenviro.Bushido
                     }
                 }
             }
+            connections.Sort((a, b) => string.Compare(a.ConnectionString, b.ConnectionString, StringComparison.OrdinalIgnoreCase));
             return connections;
         }
 
@@ -253,6 +256,7 @@ namespace Zenviro.Bushido
                     Log.Error(ex);
                 }
             }
+            connections.Sort((a, b) => string.Compare(a.Address, b.Address, StringComparison.OrdinalIgnoreCase));
             return connections;
         }
 
@@ -277,7 +281,8 @@ namespace Zenviro.Bushido
                         p.Element("processModel").Attributes().Any(x => x.Name == "userName")
                             ? p.Element("processModel").Attribute("userName").Value
                             : null,
-                });
+                })
+                .OrderBy(x => x.Name);
         }
 
         internal static IEnumerable<WebsiteModel> GetWebsites(this XContainer applicationHostConfig, HostModel host)
@@ -298,12 +303,16 @@ namespace Zenviro.Bushido
                     Protocol = b.Attribute("protocol").Value,
                     BindingInformation = b.Attribute("bindingInformation").Value
                 }).ToList()
-            });
+            })
+            .OrderBy(x => x.Name);
         }
 
         private static IEnumerable<EndpointConnectionModel> GetEndpointConnections(this XContainer appConfig, string configPath)
         {
-            return appConfig.Descendants("endpoint").Select(x => GetEndpointConnection(x, configPath)).Where(x => x != null);
+            return appConfig.Descendants("endpoint")
+                .Select(x => GetEndpointConnection(x, configPath))
+                .Where(x => x != null)
+                .OrderBy(x => x.Address);
         }
 
         private static EndpointConnectionModel GetEndpointConnection(this XElement element, string configPath)

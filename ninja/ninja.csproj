@@ -42,6 +42,9 @@
     <Reference Include="NodaTime">
       <HintPath>..\packages\NodaTime.1.2.0\lib\net35-Client\NodaTime.dll</HintPath>
     </Reference>
+    <Reference Include="NodaTime.Serialization.JsonNet">
+      <HintPath>..\packages\NodaTime.Serialization.JsonNet.1.2.0\lib\net35-Client\NodaTime.Serialization.JsonNet.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -58,6 +61,7 @@
     <Compile Include="Schedule.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

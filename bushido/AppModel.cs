@@ -6,6 +6,7 @@ namespace Zenviro.Bushido
     {
         public string Name { get; set; }
         public string Environment { get; set; }
+        public ApplicationEnvironmentModel ApplicationEnvironment { get; set; }
         public string Role { get; set; }
         public HostModel Host { get; set; }
         public AssemblyModel MainAssembly { get; set; }

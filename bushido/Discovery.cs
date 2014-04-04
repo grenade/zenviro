@@ -14,14 +14,64 @@ namespace Zenviro.Bushido
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(Discovery));
 
-        private static readonly ParallelOptions ParallelOptions = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount - 1, 1) };
+        private static readonly ParallelOptions ParallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount - 1, 1)
+        };
+
+        public static void BuildApi()
+        {
+            const int historyLimit = 20;
+            Log.Info("Discovery.BuildApi()");
+            var apiDir = Path.Combine(AppConfig.DataDir, "api");
+            var appDir = Path.Combine(apiDir, "app");
+            var pathDir = Path.Combine(apiDir, "path");
+            var historyDir = Path.Combine(apiDir, "history");
+            if (Directory.Exists(appDir))
+                Directory.Delete(appDir, true);
+            if (Directory.Exists(pathDir))
+                Directory.Delete(pathDir, true);
+            Directory.CreateDirectory(apiDir);
+            Directory.CreateDirectory(appDir);
+            Directory.CreateDirectory(pathDir);
+            Directory.CreateDirectory(historyDir);
+
+            var history = Git.Instance.GetSnaphostHistory().OrderBy(x => x.When).Reverse().ToList();
+            File.WriteAllText(Path.Combine(apiDir, "history.json"), JsonConvert.SerializeObject(history.GetRange(0, historyLimit)));
+            foreach (var env in history.Select(x => x.App.Environment).Distinct())
+            {
+                var envHistory = history.Where(x => x.App.Environment == env).ToList();
+                if (envHistory.Count > historyLimit)
+                    envHistory = envHistory.GetRange(0, historyLimit);
+                File.WriteAllText(Path.Combine(historyDir, string.Concat(env, ".json")), JsonConvert.SerializeObject(envHistory));
+            }
+                
+
+            var apps = DataAccess.GetApps().Select(x => new {x.Name, x.Role}).Distinct();
+            var paths = DataAccess.GetPaths();
+            File.WriteAllText(Path.Combine(apiDir, "app-names.json"), JsonConvert.SerializeObject(apps));
+            File.WriteAllText(Path.Combine(apiDir, "host-names.json"), JsonConvert.SerializeObject(DataAccess.GetHosts().Select(x => x.ToString()).Distinct()));
+            foreach (var app in apps)
+            {
+                var name = app.Name;
+                File.WriteAllText(Path.Combine(appDir, string.Concat(name, ".json")), JsonConvert.SerializeObject(DataAccess.GetApps(name)));
+                File.WriteAllText(Path.Combine(historyDir, string.Concat(name, ".json")), JsonConvert.SerializeObject(history.Where(x => x.App.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))));
+            }
+            File.WriteAllText(Path.Combine(apiDir, "paths.json"), JsonConvert.SerializeObject(paths));
+            File.WriteAllText(Path.Combine(apiDir, "env-codes.json"), JsonConvert.SerializeObject(DataAccess.GetEnvs()));
+            foreach (var path in paths)
+                File.WriteAllText(Path.Combine(pathDir, string.Concat(path.Share.TrimStart('\\').Replace("$", string.Empty).Replace('\\', '.'), ".json")), JsonConvert.SerializeObject(path));
+            File.WriteAllText(Path.Combine(appDir, "web.json"), JsonConvert.SerializeObject(DataAccess.GetApps().Where(x => x.Role == "web").OrderBy(x => x.Name)));
+            File.WriteAllText(Path.Combine(appDir, "svc.json"), JsonConvert.SerializeObject(DataAccess.GetApps().Where(x => x.Role == "svc").OrderBy(x => x.Name)));
+        }
 
         public static void DiscoverApps()
         {
             Log.Info("Discovery.DiscoverApps()");
             var searchPaths = DataAccess.GetPaths().Where(x => !string.IsNullOrWhiteSpace(x.Environment)).ToList();
-            Parallel.ForEach(DataAccess.GetHosts(), ParallelOptions, h =>
-                DiscoverHostApps(searchPaths.Where(x => x.Host == h).ToList()));
+            var hosts = DataAccess.GetHosts().ToArray();
+            Parallel.ForEach(hosts, ParallelOptions, h =>
+                DiscoverHostApps(searchPaths.Where(x => x.Host == h).ToList()));              
         }
 
         private static void DiscoverHostApps(List<SearchPathModel> searchPaths)
@@ -29,9 +79,9 @@ namespace Zenviro.Bushido
             if (searchPaths.Any())
             {
                 Log.Info(string.Format("Discovery.DiscoverHostApps({0})", searchPaths.First().Host));
-                foreach (var searchPath in searchPaths)
-                    foreach (var appPath in Directory.GetDirectories(searchPath.Share))
-                        DiscoverApp(searchPath, appPath);
+                Parallel.ForEach(searchPaths.Where(x => Directory.Exists(x.Share)), ParallelOptions, searchPath =>
+                    Parallel.ForEach(Directory.GetDirectories(searchPath.Share), ParallelOptions, appPath =>
+                        DiscoverApp(searchPath, appPath)));
             }
         }
 
@@ -50,6 +100,7 @@ namespace Zenviro.Bushido
                     Name = mainAssembly.Name,
                     Role = searchPath.Role,
                     Environment = searchPath.Environment,
+                    ApplicationEnvironment = new ApplicationEnvironmentModel { Code = searchPath.Environment },
                     Host = searchPath.Host,
                     MainAssembly = mainAssembly,
                     Dependencies = Analysis.GetDependencies(assemblyPath).ToList()

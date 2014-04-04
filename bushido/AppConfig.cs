@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using log4net;
 
 namespace Zenviro.Bushido
@@ -64,9 +65,11 @@ namespace Zenviro.Bushido
                 Git.Instance.Clone();
             else
                 Git.Instance.Pull(); //todo: if this fails, bot should possibly delete datadir and clone again...
+
             Discovery.DiscoverServices();
             Discovery.DiscoverSites();
             Discovery.DiscoverApps();
+            Discovery.BuildApi();
             Git.Instance.AddChanges();
         }
     }

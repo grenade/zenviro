@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using LibGit2Sharp;
 using log4net;
+using Newtonsoft.Json;
+using NodaTime;
 
 namespace Zenviro.Bushido
 {
@@ -31,6 +33,37 @@ namespace Zenviro.Bushido
 
         static readonly object RepoLock = new object();
 
+        public IEnumerable<AppPathGitHistoryModel> GetSnaphostHistory()
+        {
+            IEnumerable<AppPathGitHistoryModel> history;
+            try
+            {
+                lock (RepoLock)
+                {
+                    using (var r = new Repository(AppConfig.DataDir))
+                    {
+                        var repositoryInfoPath = r.Info.Path;
+                        var historyDir = Path.Combine(AppConfig.DataDir, "api", "history");
+                        var historyExists = Directory.Exists(historyDir) && Directory.GetFiles(historyDir, "*.json").Any();
+                        history = r.Commits
+                            //recent
+                            .Where(c => historyExists || (c.Committer.When > DateTimeOffset.Now.AddDays(-14)))
+                            //paths with blob files (trees with blobs under snapshot)
+                            .SelectMany(c => c.Tree.GetBlobs().Where(x => x.Path.StartsWith("snapshot")).Select(x => x.Path)).Distinct()
+                            //relevant commits: http://stackoverflow.com/a/21707186/68115
+                            .SelectMany(p => r.Commits.Where(c => c.Parents.Count() == 1 && c.Tree[p] != null && (c.Parents.FirstOrDefault().Tree[p] == null || c.Tree[p].Target.Id != c.Parents.FirstOrDefault().Tree[p].Target.Id))
+                            //history
+                            .Select(c => c.ToAppPathGitHistoryModel(p, repositoryInfoPath))).ToList();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e);
+                throw;
+            }
+            return history;
+        }
 
         public void AddChanges()
         {
@@ -186,6 +219,36 @@ namespace Zenviro.Bushido
                 }
                 Log.Info("Configuration changes committed to local git repository.");
             }
+        }
+
+        public static IEnumerable<TreeEntry> GetBlobs(this Tree tree)
+        {
+            var blobs = tree.Where(x => x.TargetType == TreeEntryTargetType.Blob).ToList();
+            blobs.AddRange(tree.Where(x => x.TargetType == TreeEntryTargetType.Tree).SelectMany(x => (x.Target as Tree).GetBlobs()));
+            return blobs;
+        }
+
+        public static AppPathGitHistoryModel ToAppPathGitHistoryModel(this Commit commit, string path, string repositoryInfoPath)
+        {
+            AppModel app;
+            var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString().Replace("-", string.Empty).Substring(0, 12));
+            var workDir = Path.Combine(tempFolder, "work");
+            Directory.CreateDirectory(workDir);
+            using (var repo = new Repository(repositoryInfoPath, new RepositoryOptions { WorkingDirectoryPath = workDir, IndexPath = Path.Combine(Path.GetTempPath(), "index") }))
+            {
+                repo.CheckoutPaths(commit.Sha, new[] { path }, new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force });
+                var revision = Path.Combine(repo.Info.WorkingDirectory, path);
+                app = JsonConvert.DeserializeObject<AppModel>(File.ReadAllText(revision));
+            }
+            Directory.Delete(tempFolder, true);
+            Log.Debug(string.Format("{0} {1} ({2}) {3} {4}.", app.Name, app.Environment, app.Host, commit.Committer.When, commit.Sha));
+            return new AppPathGitHistoryModel
+            {
+                App = app,
+                Path = path,
+                Sha = commit.Sha,
+                When = ZonedDateTime.FromDateTimeOffset(commit.Committer.When)
+            };
         }
     }
 }

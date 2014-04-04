@@ -143,7 +143,7 @@ namespace Zenviro.Ninja
         Dictionary<string, SearchPathModel> _searchPaths = DataAccess.GetPaths().ToDictionary(x => x.Share.ToLowerInvariant(), x => x);
 
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
-        private void Watch(SearchPathModel path)
+        public void Watch(SearchPathModel path)
         {
             if (!_watchers.ContainsKey(path.Share.ToLower()))
             {
@@ -185,6 +185,7 @@ namespace Zenviro.Ninja
             if (appPath != null)
             {
                 Discovery.DiscoverApp(_searchPaths[_watchers.Keys.First(x => appPath.ToLower().StartsWith(x))], appPath);
+                Discovery.BuildApi();
                 Git.Instance.AddChanges();
             }
         }

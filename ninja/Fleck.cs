@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using Fleck;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
+using Newtonsoft.Json;
 using Zenviro.Bushido;
 
 namespace Zenviro.Ninja
@@ -70,7 +72,35 @@ namespace Zenviro.Ninja
     {
         protected override void Append(LoggingEvent loggingEvent)
         {
-            Fleck.Instance.Broadcast(RenderLoggingEvent(loggingEvent));
+            Fleck.Instance.Broadcast(Serialize(loggingEvent));
+        }
+
+        private static string GetSeverity(Level level)
+        {
+            switch (level.Name)
+            {
+                case "DEBUG":
+                    return "Debug";
+                case "INFO":
+                    return "Information";
+                case "WARN":
+                    return "Warning";
+                case "ERROR":
+                    return "Error";
+                default:
+                    return "Information";
+            }
+        }
+        private string Serialize(LoggingEvent loggingEvent)
+        {
+            var le =
+            new
+            {
+                severity = GetSeverity(loggingEvent.Level),
+                source = loggingEvent.LocationInformation.ClassName,
+                message = loggingEvent.RenderedMessage
+            };
+            return JsonConvert.SerializeObject(le);
         }
     }
 }
