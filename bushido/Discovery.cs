@@ -115,6 +115,7 @@ namespace Zenviro.Bushido
                 if (dir != null && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
                 File.WriteAllText(file, JsonConvert.SerializeObject(app, Formatting.Indented));
+                Git.Instance.AddChanges();
             }
         }
 

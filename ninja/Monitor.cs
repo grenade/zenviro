@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Permissions;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using log4net;
@@ -107,32 +108,26 @@ namespace Zenviro.Ninja
                 millisecondsTimeout = 5000;
             Log.Info(string.Format("zenviro ninja sleeping for {0} {1}...", millisecondsTimeout < 60000 ? millisecondsTimeout / 1000 : millisecondsTimeout / 1000 / 60, millisecondsTimeout < 60000 ? "seconds" : "minutes"));
             // http://stackoverflow.com/a/11785656/68115
-            if (Environment.UserInteractive)
-                Task.Factory.StartNew(() =>
-                {
-                    // interrupt sleep if user keypress
-                    Console.ReadKey();
-                    _interrupt = true;
-                    Log.Info("Sleep interrupted by user input.");
-                }).Wait(millisecondsTimeout);
-            else
+            var rng = new Random();
+            Task.Factory.StartNew(() =>
             {
-                var rng = new Random();
-                Task.Factory.StartNew(() =>
+                while (!_interrupt && !_working)
                 {
-                    while (!_interrupt && !_working) // interrupt sleep if stopping
+                    if (Environment.UserInteractive && Console.KeyAvailable)
                     {
-                        var x = rng.Next(2, 30);
-                        var zees = string.Empty;
-                        for (var i = 0; i < x; i++)
-                            zees += 'z';
-                        Log.Debug(string.Format("{0}...", zees));
-                        Thread.Sleep(2000);
+                        _interrupt = true;
+                        Log.Info("Sleep interrupted by user input.");
                     }
-                    if (_interrupt)
-                        Log.Info("Sleep interrupted by service 'Stop' command.");
-                }).Wait(millisecondsTimeout);
-            }
+                    var x = rng.Next(2, 30);
+                    var zees = new StringBuilder();
+                    for (var i = 0; i < x; i++)
+                        zees.Append('z');
+                    Log.Debug(string.Format("{0}...", zees));
+                    Thread.Sleep(2000);
+                }
+                if (_interrupt)
+                    Log.Info("Sleep interrupted by service 'Stop' command.");
+            }).Wait(millisecondsTimeout);
         }
 
         #endregion

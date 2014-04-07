@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.Linq;
 using Fleck;
 using log4net;
@@ -14,6 +12,8 @@ namespace Zenviro.Ninja
     public class Fleck
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(Fleck));
+
+        private const int RecentMessageBufferSize = 1000;
         #region singleton
 
         static readonly object Lock = new object();
@@ -37,7 +37,13 @@ namespace Zenviro.Ninja
             _server = new WebSocketServer(Uri);
             _server.Start(socket =>
             {
-                socket.OnOpen = () => _sockets.Add(socket);
+                socket.OnOpen = () =>
+                {
+                    _sockets.Add(socket);
+                    var recentMessages = _queue.ToArray();
+                    foreach (var message in recentMessages)
+                        socket.Send(message);
+                };
                 socket.OnClose = () => _sockets.Remove(socket);
                 socket.OnMessage = Broadcast;
             });
@@ -53,9 +59,13 @@ namespace Zenviro.Ninja
             Log.Info(string.Format("fleck server running at: {0}", Uri));
         }
 
+        private readonly Queue<string> _queue = new Queue<string>(RecentMessageBufferSize);
+
         public void Broadcast(string message)
         {
-            _sockets.ToList().ForEach(s => s.Send(message));
+            var tidiedMessage = message.Replace("+<>c__DisplayClass6", string.Empty);
+            _queue.Enqueue(tidiedMessage);
+            _sockets.ToList().ForEach(s => s.Send(tidiedMessage));
         }
 
         public void Stop()
