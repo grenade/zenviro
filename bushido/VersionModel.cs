@@ -40,7 +40,10 @@ namespace Zenviro.Bushido
             return m != null
                 && FileVersion.Equals(m.FileVersion)
                 && ProductVersion.Equals(m.ProductVersion)
-                && AssemblyVersion.Equals(m.AssemblyVersion)
+                && AssemblyVersion.Major.Equals(m.AssemblyVersion.Major)
+                && AssemblyVersion.Minor.Equals(m.AssemblyVersion.Minor)
+                && AssemblyVersion.Build.Equals(m.AssemblyVersion.Build)
+                && AssemblyVersion.Revision.Equals(m.AssemblyVersion.Revision)
                 && CompileDate.Equals(m.CompileDate);
         }
 
@@ -48,8 +51,11 @@ namespace Zenviro.Bushido
         {
             return FileVersion.GetHashCode()
                 ^ ProductVersion.GetHashCode()
-                ^ AssemblyVersion.GetHashCode()
-                ^ CompileDate.GetHashCode();
+                ^ CompileDate.GetHashCode()
+                ^ AssemblyVersion.Major.GetHashCode()
+                ^ AssemblyVersion.Minor.GetHashCode()
+                ^ AssemblyVersion.Build.GetHashCode()
+                ^ AssemblyVersion.Revision.GetHashCode();
         }
 
         #endregion
