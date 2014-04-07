@@ -62,6 +62,44 @@ namespace Zenviro.Bushido
                 Log.Error(e);
                 throw;
             }
+            foreach (var group in history.GroupBy(x=>x.App.MainAssembly.Path))
+            {
+                var orderedItems = group.OrderBy(x => x.When).ToArray();
+                for (var i = 0; i < orderedItems.Length; i++)
+                {
+                    orderedItems[i].Changes = new List<AppChange>();
+                    if (i != 0 && orderedItems[i].App == null)
+                        orderedItems[i].Changes.Add(AppChange.Removed);
+                    else if (i == 0) //todo: handle situations when we arent looking at full history
+                        orderedItems[i].Changes.Add(AppChange.Deployed);
+                    else
+                    {
+                        if (!orderedItems[i].App.MainAssembly.Version.Equals(orderedItems[i - 1].App.MainAssembly.Version))
+                            orderedItems[i].Changes.Add(AppChange.VersionChanged);
+                        if (orderedItems[i].App.Website != orderedItems[i - 1].App.Website)
+                        {
+                            if (orderedItems[i].App.Website.Id != orderedItems[i - 1].App.Website.Id
+                                || (orderedItems[i].App.Website.Name != orderedItems[i - 1].App.Website.Name || !orderedItems[i].App.Website.Name.Equals(orderedItems[i - 1].App.Website.Name, StringComparison.InvariantCultureIgnoreCase))
+                                || !orderedItems[i].App.Website.Host.Equals(orderedItems[i - 1].App.Website.Host))
+                                orderedItems[i].Changes.Add(AppChange.WebsiteChanged);
+                            if (!Extensions.ListEquals(orderedItems[i].App.Website.Applications, orderedItems[i - 1].App.Website.Applications))
+                                orderedItems[i].Changes.Add(AppChange.WebsiteApplicationChanged);
+                            if (!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools, orderedItems[i - 1].App.Website.ApplicationPools))
+                                orderedItems[i].Changes.Add(AppChange.WebsiteApplicationPoolChanged);
+                            if (!Extensions.ListEquals(orderedItems[i].App.Website.Bindings, orderedItems[i - 1].App.Website.Bindings))
+                                orderedItems[i].Changes.Add(AppChange.WebsiteBindingChanged);
+                        }
+                        if (orderedItems[i].App.WindowsService != orderedItems[i - 1].App.WindowsService)
+                            orderedItems[i].Changes.Add(AppChange.WindowsServiceChanged);
+                        if (!Extensions.ListEquals(orderedItems[i].App.EndpointConnections, orderedItems[i - 1].App.EndpointConnections))
+                            orderedItems[i].Changes.Add(AppChange.EndpointChanged);
+                        if (!Extensions.ListEquals(orderedItems[i].App.DatabaseConnections, orderedItems[i - 1].App.DatabaseConnections))
+                            orderedItems[i].Changes.Add(AppChange.DatabaseConnectionChanged);
+                        if (!Extensions.ListEquals(orderedItems[i].App.Dependencies, orderedItems[i - 1].App.Dependencies))
+                            orderedItems[i].Changes.Add(AppChange.DependencyChanged);
+                    }
+                }
+            }
             return history;
         }
 

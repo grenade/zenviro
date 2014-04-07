@@ -71,7 +71,7 @@ namespace Zenviro.Bushido
             var searchPaths = DataAccess.GetPaths().Where(x => !string.IsNullOrWhiteSpace(x.Environment)).ToList();
             var hosts = DataAccess.GetHosts().ToArray();
             Parallel.ForEach(hosts, ParallelOptions, h =>
-                DiscoverHostApps(searchPaths.Where(x => x.Host == h).ToList()));              
+                DiscoverHostApps(searchPaths.Where(x => x.Host.Equals(h)).ToList()));              
         }
 
         private static void DiscoverHostApps(List<SearchPathModel> searchPaths)
@@ -162,7 +162,7 @@ namespace Zenviro.Bushido
 
         private static void DiscoverHostServices(HostModel host, string serviceDataDir)
         {
-            var paths = DataAccess.GetPaths().Where(x => x.Host == host).Select(x => x.Path);
+            var paths = DataAccess.GetPaths().Where(x => x.Host.Equals(host)).Select(x => x.Path);
             Log.Debug(string.Format("Service probe: {0}.{1}.", host.Name, host.Domain));
             try
             {

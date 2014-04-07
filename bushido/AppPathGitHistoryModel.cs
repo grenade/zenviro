@@ -1,4 +1,5 @@
-﻿using NodaTime;
+﻿using System.Collections.Generic;
+using NodaTime;
 
 namespace Zenviro.Bushido
 {
@@ -8,6 +9,6 @@ namespace Zenviro.Bushido
         public string Path { get; set; }
         public string Sha { get; set; }
         public ZonedDateTime When { get; set; }
-        //todo: add change type (eg: deployed, removed, config change, new version, etc)
+        public List<AppChange> Changes { get; set; }
     }
 }

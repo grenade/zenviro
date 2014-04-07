@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Analysis.cs" />
+    <Compile Include="AppChange.cs" />
     <Compile Include="AppConfig.cs" />
     <Compile Include="ApplicationEnvironmentModel.cs" />
     <Compile Include="ApplicationGroupModel.cs" />
@@ -75,6 +76,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchPathModel.cs" />
     <Compile Include="VersionModel.cs" />
+    <Compile Include="WebsiteApplicationModel.cs" />
+    <Compile Include="WebsiteApplicationPoolModel.cs" />
+    <Compile Include="WebsiteBindingModel.cs" />
     <Compile Include="WebsiteModel.cs" />
     <Compile Include="WindowsServiceModel.cs" />
   </ItemGroup>

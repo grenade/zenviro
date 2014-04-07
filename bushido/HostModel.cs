@@ -38,19 +38,41 @@ namespace Zenviro.Bushido
                 : new HostModel(text, null);
         }
 
-        public static bool operator == (HostModel a, HostModel b)
+        #region equality overloads
+
+        public static bool operator ==(HostModel a, HostModel b)
         {
-            if (ReferenceEquals(a, b))
-                return true;
-            if (((object)a == null) || ((object)b == null))
-                return false;
-            return a.Name.Equals(b.Name, StringComparison.InvariantCultureIgnoreCase)
-                && a.Domain.Equals(b.Domain, StringComparison.InvariantCultureIgnoreCase);
+            return ((object)a == null && (object)b == null)
+                || (((object)a != null) && ((object)b != null) && a.Equals(b))
+                || (((object)a == null) || ((object)b == null));
         }
 
-        public static bool operator != (HostModel a, HostModel b)
+        public static bool operator !=(HostModel a, HostModel b)
         {
             return !(a == b);
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+            var o = obj as HostModel;
+            return Equals(o);
+        }
+
+        public bool Equals(HostModel m)
+        {
+            return m != null
+                && Name.Equals(m.Name, StringComparison.InvariantCultureIgnoreCase)
+                && Domain.Equals(m.Domain, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode()
+                ^ Domain.GetHashCode();
+        }
+
+        #endregion
     }
 }

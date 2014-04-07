@@ -85,7 +85,7 @@ namespace Zenviro.Bushido
                     var t = sitePath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                     t.RemoveAt(0);
                     sitePath = string.Join(@"\", t).Replace('$', ':');
-                    app.Website = sites.FirstOrDefault(s => s.Host == app.Host && s.Applications.Any(a => a.PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase)));
+                    app.Website = sites.FirstOrDefault(s => s.Host.Equals(app.Host) && s.Applications.Any(a => a.PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase)));
                     if (app.Website != null)
                     {
                         var binding = app.Website.Bindings.FirstOrDefault(b => b.Protocol == "http");
@@ -118,7 +118,7 @@ namespace Zenviro.Bushido
                     var t = servicePath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                     t.RemoveAt(0);
                     servicePath = string.Join(@"\", t).Replace('$', ':');
-                    app.WindowsService = services.FirstOrDefault(s => s.Host == app.Host && s.Path.Contains(servicePath, StringComparison.InvariantCultureIgnoreCase));
+                    app.WindowsService = services.FirstOrDefault(s => s.Host.Equals(app.Host) && s.Path.Contains(servicePath, StringComparison.InvariantCultureIgnoreCase));
                 }
             }
             if (app.WindowsService != null)
