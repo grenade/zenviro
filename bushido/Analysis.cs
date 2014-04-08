@@ -88,7 +88,7 @@ namespace Zenviro.Bushido
                     app.Website = sites.FirstOrDefault(s => s.Host.Equals(app.Host) && s.Applications.Any(a => a.PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase)));
                     if (app.Website != null)
                     {
-                        var binding = app.Website.Bindings.FirstOrDefault(b => b.Protocol == "http");
+                        var binding = app.Website.Bindings.FirstOrDefault(b => b.Protocol.StartsWith("http", StringComparison.InvariantCultureIgnoreCase));
                         if (binding != null)
                         {
                             var bi = binding.BindingInformation.Split(':');
@@ -96,10 +96,14 @@ namespace Zenviro.Bushido
                                 ? app.Host.ToString()
                                 : bi[2];
                             app.Url = string.Format("{0}://{1}:{2}", binding.Protocol, hostHeader, bi[1]);
-                            app.Url +=
-                                app.Website.Applications.First(
-                                    a => a.PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase)).Path;
+                            app.Url += app.Website.Applications.First(a => a.PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase)).Path;
                         }
+                        for (var i = app.Website.Applications.Count - 1; i >= 0; i--)
+                            if (!app.Website.Applications[i].PhysicalPath.Equals(sitePath, StringComparison.InvariantCultureIgnoreCase))
+                                app.Website.Applications.RemoveAt(i);
+                        for (var i = app.Website.ApplicationPools.Count - 1; i >= 0; i--)
+                            if (!app.Website.Applications.Select(a => a.ApplicationPool).Any(appPoolName => app.Website.ApplicationPools[i].Name.Equals(appPoolName, StringComparison.InvariantCultureIgnoreCase)))
+                                app.Website.ApplicationPools.RemoveAt(i);
                         Log.Debug(string.Format("Application: {0}, linked to IIS Website: {1}.", app.Name, app.Url));
                     }
                 }

@@ -75,28 +75,32 @@ namespace Zenviro.Bushido
                     else
                     {
                         if (!orderedItems[i].App.MainAssembly.Version.Equals(orderedItems[i - 1].App.MainAssembly.Version))
-                            orderedItems[i].Changes.Add(AppChange.VersionChanged);
+                            orderedItems[i].Changes.Add(AppChange.Version);
                         if (orderedItems[i].App.Website != orderedItems[i - 1].App.Website)
                         {
                             if (orderedItems[i].App.Website.Id != orderedItems[i - 1].App.Website.Id
                                 || (orderedItems[i].App.Website.Name != orderedItems[i - 1].App.Website.Name || !orderedItems[i].App.Website.Name.Equals(orderedItems[i - 1].App.Website.Name, StringComparison.InvariantCultureIgnoreCase))
                                 || !orderedItems[i].App.Website.Host.Equals(orderedItems[i - 1].App.Website.Host))
-                                orderedItems[i].Changes.Add(AppChange.WebsiteChanged);
+                                orderedItems[i].Changes.Add(AppChange.Website);
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.Applications, orderedItems[i - 1].App.Website.Applications))
-                                orderedItems[i].Changes.Add(AppChange.WebsiteApplicationChanged);
+                                orderedItems[i].Changes.Add(AppChange.WebApplication);
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools, orderedItems[i - 1].App.Website.ApplicationPools))
-                                orderedItems[i].Changes.Add(AppChange.WebsiteApplicationPoolChanged);
+                                orderedItems[i].Changes.Add(!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools.Select(x => x.Username).ToList(), orderedItems[i - 1].App.Website.ApplicationPools.Select(x => x.Username).ToList())
+                                    ? AppChange.ApplicationPoolIdentity
+                                    : AppChange.ApplicationPool);
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.Bindings, orderedItems[i - 1].App.Website.Bindings))
-                                orderedItems[i].Changes.Add(AppChange.WebsiteBindingChanged);
+                                orderedItems[i].Changes.Add(AppChange.WebsiteBinding);
                         }
                         if (orderedItems[i].App.WindowsService != orderedItems[i - 1].App.WindowsService)
-                            orderedItems[i].Changes.Add(AppChange.WindowsServiceChanged);
+                            orderedItems[i].Changes.Add(!orderedItems[i].App.WindowsService.Username.Equals(orderedItems[i - 1].App.WindowsService.Username, StringComparison.InvariantCultureIgnoreCase) 
+                                ? AppChange.WindowsServiceIdentity
+                                : AppChange.WindowsService);
                         if (!Extensions.ListEquals(orderedItems[i].App.EndpointConnections, orderedItems[i - 1].App.EndpointConnections))
-                            orderedItems[i].Changes.Add(AppChange.EndpointChanged);
+                            orderedItems[i].Changes.Add(AppChange.EndpointConnections);
                         if (!Extensions.ListEquals(orderedItems[i].App.DatabaseConnections, orderedItems[i - 1].App.DatabaseConnections))
-                            orderedItems[i].Changes.Add(AppChange.DatabaseConnectionChanged);
+                            orderedItems[i].Changes.Add(AppChange.DatabaseConnections);
                         if (!Extensions.ListEquals(orderedItems[i].App.Dependencies, orderedItems[i - 1].App.Dependencies))
-                            orderedItems[i].Changes.Add(AppChange.DependencyChanged);
+                            orderedItems[i].Changes.Add(AppChange.Dependency);
                     }
                 }
             }
