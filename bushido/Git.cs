@@ -33,7 +33,7 @@ namespace Zenviro.Bushido
 
         static readonly object RepoLock = new object();
 
-        public IEnumerable<AppPathGitHistoryModel> GetSnaphostHistory()
+        public List<AppPathGitHistoryModel> GetSnaphostHistory(string pathFilter = null)
         {
             IEnumerable<AppPathGitHistoryModel> history;
             try
@@ -44,12 +44,14 @@ namespace Zenviro.Bushido
                     {
                         var repositoryInfoPath = r.Info.Path;
                         var historyDir = Path.Combine(AppConfig.DataDir, "api", "history");
-                        var historyExists = Directory.Exists(historyDir) && Directory.GetFiles(historyDir, "*.json").Any();
+                        var someHistoryExists = Directory.Exists(historyDir) && Directory.GetFiles(historyDir, "*.json").Any();
                         history = r.Commits
                             //recent
-                            .Where(c => historyExists || (c.Committer.When > DateTimeOffset.Now.AddDays(-14)))
+                            .Where(c => (someHistoryExists || (c.Committer.When > DateTimeOffset.Now.AddDays(-14))))
                             //paths with blob files (trees with blobs under snapshot)
-                            .SelectMany(c => c.Tree.GetBlobs().Where(x => x.Path.StartsWith("snapshot")).Select(x => x.Path)).Distinct()
+                            .SelectMany(c => c.Tree.GetBlobs().Where(x => x.Path.StartsWith("snapshot")
+                                //paths containing hostnameFilter
+                                && (string.IsNullOrWhiteSpace(pathFilter) || x.Path.Contains(pathFilter, StringComparison.InvariantCultureIgnoreCase))).Select(x => x.Path)).Distinct()
                             //relevant commits: http://stackoverflow.com/a/21707186/68115
                             .SelectMany(p => r.Commits.Where(c => c.Parents.Count() == 1 && c.Tree[p] != null && (c.Parents.FirstOrDefault().Tree[p] == null || c.Tree[p].Target.Id != c.Parents.FirstOrDefault().Tree[p].Target.Id))
                             //history
@@ -103,8 +105,9 @@ namespace Zenviro.Bushido
                             orderedItems[i].Changes.Add(AppChange.Dependency);
                     }
                 }
+                Log.Debug(string.Format("{0}@{1}: {2} history item(s) indexed.", group.First().App.Name, group.First().App.Host, group.Count()));
             }
-            return history;
+            return history.OrderBy(x => x.When).Reverse().ToList();
         }
 
         public void AddChanges()

@@ -19,6 +19,14 @@ namespace Zenviro.Bushido
             MaxDegreeOfParallelism = Math.Max(Environment.ProcessorCount - 1, 1)
         };
 
+        public static void BuildAppHistory(SearchPathModel path, string appName)
+        {
+            var historyDir = Path.Combine(AppConfig.DataDir, "api", "history");
+            Directory.CreateDirectory(historyDir);
+            var history = Git.Instance.GetSnaphostHistory(string.Format("{0}/{1}/{2}", path.Environment, path.Host, appName));
+            File.WriteAllText(Path.Combine(historyDir, string.Concat(appName, ".json")), JsonConvert.SerializeObject(history));
+        }
+
         public static void BuildApi()
         {
             const int historyLimit = 20;
@@ -36,7 +44,7 @@ namespace Zenviro.Bushido
             Directory.CreateDirectory(pathDir);
             Directory.CreateDirectory(historyDir);
 
-            var history = Git.Instance.GetSnaphostHistory().OrderBy(x => x.When).Reverse().ToList();
+            var history = Git.Instance.GetSnaphostHistory();
             File.WriteAllText(Path.Combine(apiDir, "history.json"), JsonConvert.SerializeObject(history.GetRange(0, historyLimit)));
             foreach (var env in history.Select(x => x.App.Environment).Distinct())
             {
@@ -85,7 +93,7 @@ namespace Zenviro.Bushido
             }
         }
 
-        public static void DiscoverApp(SearchPathModel searchPath, string appPath)
+        public static string DiscoverApp(SearchPathModel searchPath, string appPath)
         {
             var assemblyPath = searchPath.Role == "svc"
                 ? Analysis.GetSvcAssemblyPath(appPath)
@@ -116,20 +124,22 @@ namespace Zenviro.Bushido
                     Directory.CreateDirectory(dir);
                 File.WriteAllText(file, JsonConvert.SerializeObject(app, Formatting.Indented));
                 Git.Instance.AddChanges();
+                return app.Name;
             }
+            return null;
         }
 
         public static void DiscoverSites()
         {
             Log.Info("Discovery.DiscoverSites()");
+            Parallel.ForEach(DataAccess.GetHosts(), ParallelOptions, DiscoverHostSites);
+        }
+
+        public static void DiscoverHostSites(HostModel host)
+        {
             var siteDataDir = Path.Combine(AppConfig.DataDir, "infrastructure", "site");
             if (!Directory.Exists(siteDataDir))
                 Directory.CreateDirectory(siteDataDir);
-            Parallel.ForEach(DataAccess.GetHosts(), ParallelOptions, host => DiscoverHostSites(host, siteDataDir));
-        }
-
-        private static void DiscoverHostSites(HostModel host, string siteDataDir)
-        {
             try
             {
                 var appHostConfigFile = string.Format(@"\\{0}\c$\Windows\System32\inetsrv\config\applicationHost.config", host);
@@ -154,14 +164,14 @@ namespace Zenviro.Bushido
         public static void DiscoverServices()
         {
             Log.Info("Discovery.DiscoverServices()");
+            Parallel.ForEach(DataAccess.GetHosts(), ParallelOptions, DiscoverHostServices);
+        }
+
+        public static void DiscoverHostServices(HostModel host)
+        {
             var serviceDataDir = Path.Combine(AppConfig.DataDir, "infrastructure", "service");
             if (!Directory.Exists(serviceDataDir))
                 Directory.CreateDirectory(serviceDataDir);
-            Parallel.ForEach(DataAccess.GetHosts(), ParallelOptions, host => DiscoverHostServices(host, serviceDataDir));
-        }
-
-        private static void DiscoverHostServices(HostModel host, string serviceDataDir)
-        {
             var paths = DataAccess.GetPaths().Where(x => x.Host.Equals(host)).Select(x => x.Path);
             Log.Debug(string.Format("Service probe: {0}.{1}.", host.Name, host.Domain));
             try

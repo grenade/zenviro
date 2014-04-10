@@ -179,9 +179,20 @@ namespace Zenviro.Ninja
             var appPath = Path.GetDirectoryName(e.FullPath);
             if (appPath != null)
             {
-                Discovery.DiscoverApp(_searchPaths[_watchers.Keys.First(x => appPath.ToLower().StartsWith(x))], appPath);
-                Discovery.BuildApi();
-                Git.Instance.AddChanges();
+                var searchPath = _searchPaths[_watchers.Keys.First(x => appPath.ToLower().StartsWith(x))];
+                if(searchPath.Role == "svc")
+                    Discovery.DiscoverHostServices(searchPath.Host);
+                else
+                    Discovery.DiscoverHostSites(searchPath.Host);
+                var appName = Discovery.DiscoverApp(searchPath, appPath);
+                if (!string.IsNullOrWhiteSpace(appName))
+                {
+                    Git.Instance.AddChanges();
+                    //todo: work out which parts of app-specific BuildApi() need to run
+                    //Discovery.BuildApi();
+                    Discovery.BuildAppHistory(searchPath, appName);
+                    Git.Instance.AddChanges();
+                }
             }
         }
 
