@@ -82,7 +82,13 @@ namespace Zenviro.Ninja
     {
         protected override void Append(LoggingEvent loggingEvent)
         {
-            Fleck.Instance.Broadcast(Serialize(loggingEvent));
+            Fleck.Instance.Broadcast(JsonConvert.SerializeObject(new
+            {
+                severity = GetSeverity(loggingEvent.Level),
+                source = loggingEvent.LocationInformation.ClassName,
+                message = loggingEvent.RenderedMessage,
+                timestamp = loggingEvent.TimeStamp
+            }));
         }
 
         private static string GetSeverity(Level level)
@@ -91,8 +97,6 @@ namespace Zenviro.Ninja
             {
                 case "DEBUG":
                     return "Debug";
-                case "INFO":
-                    return "Information";
                 case "WARN":
                     return "Warning";
                 case "ERROR":
@@ -100,17 +104,6 @@ namespace Zenviro.Ninja
                 default:
                     return "Information";
             }
-        }
-        private string Serialize(LoggingEvent loggingEvent)
-        {
-            var le =
-            new
-            {
-                severity = GetSeverity(loggingEvent.Level),
-                source = loggingEvent.LocationInformation.ClassName,
-                message = loggingEvent.RenderedMessage
-            };
-            return JsonConvert.SerializeObject(le);
         }
     }
 }
