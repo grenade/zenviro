@@ -87,7 +87,7 @@ namespace Zenviro.Bushido
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.Applications, orderedItems[i - 1].App.Website.Applications))
                                 orderedItems[i].Changes.Add(AppChange.WebApplication);
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools, orderedItems[i - 1].App.Website.ApplicationPools))
-                                orderedItems[i].Changes.Add(!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools.Select(x => x.Username).ToList(), orderedItems[i - 1].App.Website.ApplicationPools.Select(x => x.Username).ToList())
+                                orderedItems[i].Changes.Add(!Extensions.ListEquals(orderedItems[i].App.Website.ApplicationPools.Select(x => x.Username ?? "ApplicationPoolIdentity").ToList(), orderedItems[i - 1].App.Website.ApplicationPools.Select(x => x.Username ?? "ApplicationPoolIdentity").ToList())
                                     ? AppChange.ApplicationPoolIdentity
                                     : AppChange.ApplicationPool);
                             if (!Extensions.ListEquals(orderedItems[i].App.Website.Bindings, orderedItems[i - 1].App.Website.Bindings))

@@ -284,7 +284,7 @@ namespace Zenviro.Bushido
                         p.HasElements && p.Elements().Any(x => x.Name == "processModel") &&
                         p.Element("processModel").Attributes().Any(x => x.Name == "userName")
                             ? p.Element("processModel").Attribute("userName").Value
-                            : null,
+                            : "ApplicationPoolIdentity",
                 })
                 .OrderBy(x => x.Name);
         }
